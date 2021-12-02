@@ -1,0 +1,186 @@
+parameters:
+  - name: csv_file_name
+    displayName: Csv File Name
+    type: string
+    default: Pilot.DEV.csv
+
+variables:
+  - name: agent_script_path
+    value: "IaaSMigration/Agentless/Agentless VMware automation"
+
+  - name: csv_file_path
+    value: "IaaSMigration/Agentless/Applications/${{ parameters.csv_file_name }}"
+
+  - name: agent
+    value: "Agentless"
+
+  - name: ChannelName
+    value: "${{ parameters.Teams }}"
+
+trigger: none
+
+pool:
+  vmImage: "windows-latest"
+
+name: Migrate-${{ parameters.csv_file_name }}-Agentless-$(Date:yyyyMMdd)
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildArtifact
+        steps:
+          - template: azure-package.yml
+
+  - stage: StartReplication
+    condition: succeeded('Build')
+    jobs:
+      - deployment: StartReplication
+        environment: "StartReplication"
+        variables:
+          - name: root_path
+            value: $(Pipeline.Workspace)\Artifacts
+          - name: agent_type
+            value: $(agent)
+          - name: PowerShell
+            value: $(root_path)/$(agent_script_path)/AzMigrate_StartReplication.ps1
+          - name: DisplayName
+            value: Start Replication
+          - name: TeamsChannelName
+            value: $(ChannelName)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: azure-jobs.yml
+
+  - stage: UpdateMachineProperties
+    condition: succeeded('Build')
+    jobs:
+      - deployment: UpdateMachineProperties
+        environment: "UpdateMachineProperties"
+        variables:
+          - name: root_path
+            value: $(Pipeline.Workspace)\Artifacts
+          - name: agent_type
+            value: $(agent)
+          - name: PowerShell
+            value: $(root_path)/$(agent_script_path)/AzMigrate_UpdateReplicationStatus.ps1, $(root_path)/$(agent_script_path)/AzMigrate_UpdateMachineProperties.ps1
+          - name: DisplayName
+            value: Update Machine Properties
+          - name: TeamsChannelName
+            value: $(ChannelName)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: azure-jobs.yml
+
+  - stage: StartTestMigration
+    condition: succeeded('Build')
+    jobs:
+      - deployment: StartTestMigration
+        environment: "StartTestMigration"
+        variables:
+          - name: root_path
+            value: $(Pipeline.Workspace)\Artifacts
+          - name: agent_type
+            value: $(agent)
+          - name: PowerShell
+            value: $(root_path)/$(agent_script_path)/AzMigrate_UpdateReplicationStatus.ps1, $(root_path)/$(agent_script_path)/AzMigrate_StartTestMigration.ps1
+          - name: DisplayName
+            value: Start Test Migration
+          - name: TeamsChannelName
+            value: $(ChannelName)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: azure-jobs.yml
+
+  - stage: CleanUpTestMigration
+    condition: succeeded('Build')
+    jobs:
+      - deployment: CleanUpTestMigration
+        environment: "CleanUpTestMigration"
+        variables:
+          - name: root_path
+            value: $(Pipeline.Workspace)\Artifacts
+          - name: agent_type
+            value: $(agent)
+          - name: PowerShell
+            value: $(root_path)/$(agent_script_path)/AzMigrate_UpdateReplicationStatus.ps1, $(root_path)/$(agent_script_path)/AzMigrate_CleanUpTestMigration.ps1
+          - name: DisplayName
+            value: Clean UpTest Migration
+          - name: TeamsChannelName
+            value: $(ChannelName)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: azure-jobs.yml
+
+  - stage: StartMigration
+    condition: succeeded('Build')
+    jobs:
+      - deployment: StartMigration
+        environment: "StartMigration"
+        variables:
+          - name: root_path
+            value: $(Pipeline.Workspace)\Artifacts
+          - name: agent_type
+            value: $(agent)
+          - name: PowerShell
+            value: $(root_path)/$(agent_script_path)/AzMigrate_UpdateReplicationStatus.ps1, $(root_path)/$(agent_script_path)/AzMigrate_StartMigration.ps1
+          - name: DisplayName
+            value: Start Migration
+          - name: TeamsChannelName
+            value: $(ChannelName)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: azure-jobs.yml
+
+  - stage: EnableServices
+    condition: succeeded('Build')
+    jobs:
+      - deployment: EnableServices
+        environment: "EnableServices"
+        variables:
+          - name: root_path
+            value: $(Pipeline.Workspace)\Artifacts
+          - name: agent_type
+            value: $(agent)
+          - name: PowerShell
+            value: $(root_path)/IaaSMigration/Custom/Enable-AzBackup.ps1
+          - name: DisplayName
+            value: Enable Services
+          - name: TeamsChannelName
+            value: $(ChannelName)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: azure-jobs.yml
+
+  - stage: StopReplication
+    condition: succeeded('Build')
+    jobs:
+      - deployment: StopReplication
+        environment: "StopReplication"
+        variables:
+          - name: root_path
+            value: $(Pipeline.Workspace)\Artifacts
+          - name: agent_type
+            value: $(agent)
+          - name: PowerShell
+            value: $(root_path)/$(agent_script_path)/AzMigrate_StopReplication.ps1
+          - name: DisplayName
+            value: Stop Replication
+          - name: TeamsChannelName
+            value: $(ChannelName)
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: azure-jobs.yml

@@ -1,0 +1,19 @@
+steps:
+  - task: AzurePowerShell@4
+    displayName: $(DisplayName)
+    inputs:
+      azureSubscription: "AzureMigrate-NonProd"
+      ScriptType: "FilePath"
+      ScriptPath: "$(root_path)/IaaSMigration/Common/Connect-Azure.ps1"
+      ScriptArguments: '-Pipeline -InvokeCommands "$(PowerShell)" -InvokeArguments $(root_path)/$(csv_file_path)'
+      FailOnStandardError: true
+      azurePowerShellVersion: "LatestVersion"
+      pwsh: true
+  - task: AzureFileCopy@4
+    displayName: "Upload Log Files"
+    inputs:
+      SourcePath: "$(root_path)/IaaSMigration/$(agent_type)/Applications/logs/*"
+      azureSubscription: "AzureMigrate-NonProd"
+      Destination: "AzureBlob"
+      storage: "tpstaiaasmigration"
+      ContainerName: "iaasmigrationlogs"

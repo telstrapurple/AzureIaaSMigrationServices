@@ -1,0 +1,36 @@
+steps:
+- task: CopyFiles@2
+  displayName: "Copy Common artifacts"
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/IaaSMigration/Common/'
+    Contents: '**'
+    TargetFolder: '$(build.ArtifactStagingDirectory)/IaaSMigration/Common'
+
+- task: CopyFiles@2
+  displayName: "Copy Custom artifacts"
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/IaaSMigration/Custom/'
+    Contents: '**'
+    TargetFolder: '$(build.ArtifactStagingDirectory)/IaaSMigration/Custom'
+
+- task: CopyFiles@2
+  displayName: "Copy Agentless artifacts"
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/IaaSMigration/Agentless/'
+    Contents: '**'
+    TargetFolder: '$(build.ArtifactStagingDirectory)/IaaSMigration/Agentless'
+
+- task: CopyFiles@2
+  displayName: "Copy Agent artifacts"
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/IaaSMigration/Agent/'
+    Contents: '**'
+    TargetFolder: '$(build.ArtifactStagingDirectory)/IaaSMigration/Agent'
+
+
+- task: PublishBuildArtifacts@1
+  displayName: "Publish Artifacts"
+  inputs:
+    PathtoPublish: '$(build.ArtifactStagingDirectory)'
+    ArtifactName: 'Artifacts'
+    publishLocation: 'Container'
